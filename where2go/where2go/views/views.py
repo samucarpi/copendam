@@ -20,8 +20,5 @@ def dashboard(request):
     }
     return render(request, 'dashboard/dashboard.html', context)
 
-def test_view(request):
-    return render(request, 'test/test.html')
-
 def dashboard_view(request):
     return render(request, 'dashboard/dashboard.html')

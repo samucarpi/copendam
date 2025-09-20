@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}My Site{% endblock %}</title>
+</head>
+<body>
+    <header>Qui header comune</header>
+
+    <main>
+        {% block content %}
+        <!-- Contenuto specifico della pagina -->
+        {% endblock %}
+    </main>
+
+    <footer>Qui footer comune</footer>
+</body>
+</html>
