@@ -21,5 +21,5 @@ class Restaurants(models.Model):
 '''
 class Votes(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    category = models.ForeignKey(Restaurants, on_delete=models.CASCADE)
+    category = models.ForeignKey(Categories, on_delete=models.CASCADE)
 
