@@ -16,6 +16,7 @@ Including another URLconf
 """
 from django.urls import path
 from .views.views import dashboard
+from .views.auth_views import auth_view, logout_view
 from .views.test_views import (
     admin_dashboard, test_view, add_category, delete_category,
     add_restaurant, delete_restaurant, add_user, delete_user,
@@ -23,6 +24,11 @@ from .views.test_views import (
 )
 
 urlpatterns = [
+    # Authentication URLs
+    path('', auth_view, name='auth'),
+    path('logout/', logout_view, name='logout'),
+    
+    # Main app URLs
     path('dashboard/', dashboard, name='dashboard'),
     path('test/', test_view, name='test_view'),
     

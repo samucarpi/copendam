@@ -1,17 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>{% block title %}My Site{% endblock %}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Where2Go{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
-    <header>Qui header comune</header>
-
     <main>
-        {% block content %}
-        <!-- Contenuto specifico della pagina -->
-        {% endblock %}
+        {% include 'components/header.html' %}
+        {% block content %}{% endblock %}
     </main>
-
-    <footer>Qui footer comune</footer>
 </body>
 </html>

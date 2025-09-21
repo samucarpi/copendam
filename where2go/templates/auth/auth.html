@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+
+{% block title %}Accedi - Where2Go{% endblock %}
+
+{% block content %}
+<div class="flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+            <!-- Tab Navigation -->
+            <div class="flex border-b border-gray-200 mb-6">
+                <button onclick="switchTab('login')" id="loginTab" 
+                        class="w-1/2 py-2 text-center font-medium border-b-2 border-blue-600 text-blue-600">
+                    Accedi
+                </button>
+                <button onclick="switchTab('register')" id="registerTab" 
+                        class="w-1/2 py-2 text-center font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                    Registrati
+                </button>
+            </div>
+
+            <!-- Login Form -->
+            <div id="loginForm" class="space-y-6">
+                <form method="post" action="{% url 'auth' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="form_type" value="login">
+                    
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <div>
+                        <label for="login_username" class="block text-sm font-medium text-gray-700">
+                            Username o Email
+                        </label>
+                        <div class="mt-1">
+                            <input id="login_username" name="username" type="text" required 
+                                   class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="login_password" class="block text-sm font-medium text-gray-700">
+                            Password
+                        </label>
+                        <div class="mt-1">
+                            <input id="login_password" name="password" type="password" required 
+                                   class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+
+                    <div class="mt-6">
+                        <button type="submit" 
+                                class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200">
+                            Accedi
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Register Form -->
+            <div id="registerForm" class="space-y-6 hidden">
+                <form method="post" action="{% url 'auth' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="form_type" value="register">
+                    
+                    {% if register_errors %}
+                        {% for error in register_errors %}
+                            <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
+                                {{ error }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <div>
+                        <label for="register_username" class="block text-sm font-medium text-gray-700">
+                            Username
+                        </label>
+                        <div class="mt-1">
+                            <input id="register_username" name="username" type="text" required 
+                                   class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="register_email" class="block text-sm font-medium text-gray-700">
+                            Email
+                        </label>
+                        <div class="mt-1">
+                            <input id="register_email" name="email" type="email" required 
+                                   class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="register_password1" class="block text-sm font-medium text-gray-700">
+                            Password
+                        </label>
+                        <div class="mt-1">
+                            <input id="register_password1" name="password1" type="password" required 
+                                   class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="register_password2" class="block text-sm font-medium text-gray-700">
+                            Conferma Password
+                        </label>
+                        <div class="mt-1">
+                            <input id="register_password2" name="password2" type="password" required 
+                                   class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <button type="submit" 
+                                class="mt-6 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200">
+                            Registrati
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function switchTab(tab) {
+    const loginTab = document.getElementById('loginTab');
+    const registerTab = document.getElementById('registerTab');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+
+    if (tab === 'login') {
+        loginTab.className = 'w-1/2 py-2 text-center font-medium border-b-2 border-blue-600 text-blue-600';
+        registerTab.className = 'w-1/2 py-2 text-center font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700';
+        loginForm.classList.remove('hidden');
+        registerForm.classList.add('hidden');
+    } else {
+        loginTab.className = 'w-1/2 py-2 text-center font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700';
+        registerTab.className = 'w-1/2 py-2 text-center font-medium border-b-2 border-blue-600 text-blue-600';
+        loginForm.classList.add('hidden');
+        registerForm.classList.remove('hidden');
+    }
+}
+
+// Show register form if there are register errors
+{% if register_errors %}
+document.addEventListener('DOMContentLoaded', function() {
+    switchTab('register');
+});
+{% endif %}
+</script>
+{% endblock %}

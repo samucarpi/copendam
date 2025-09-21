@@ -1,7 +1,9 @@
 from django.shortcuts import render, redirect
 from ..models import Categories, FoodPoll
 from django.db.models import Count
+from django.contrib.auth.decorators import login_required
 
+@login_required
 def dashboard(request):
     categories = Categories.objects.all()
 
