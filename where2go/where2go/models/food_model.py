@@ -32,6 +32,24 @@ class FoodPoll(models.Model):
 
 
 '''
+    Contains presence votes of users.
+    Each user can vote whether they will be present or absent.
+    Choices: 'present' or 'absent'
+'''
+class PresencePoll(models.Model):
+    PRESENCE_CHOICES = [
+        ('present', 'Presente'),
+        ('absent', 'Assente'),
+    ]
+    
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    presence = models.CharField(max_length=10, choices=PRESENCE_CHOICES)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.get_presence_display()}"
+
+
+'''
     Reviews model representing user reviews for restaurants.
 '''
 class Reviews(models.Model):

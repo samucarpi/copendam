@@ -233,6 +233,14 @@
                 <div class="stat-number">{{ total_reviews }}</div>
                 <div>Reviews</div>
             </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ total_food_polls }}</div>
+                <div>Food Votes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ present_votes }}/{{ absent_votes }}</div>
+                <div>Present/Absent</div>
+            </div>
         </div>
 
         <div class="dashboard-grid">
@@ -386,6 +394,161 @@
                     {% empty %}
                         <p>No reviews found.</p>
                     {% endfor %}
+                </div>
+            </div>
+
+            <!-- Food Poll Votes -->
+            <div class="section">
+                <h2>🍽️ Food Poll Votes</h2>
+                <div class="item-list">
+                    {% for vote in food_polls %}
+                        <div class="item">
+                            <div>
+                                <strong>{{ vote.user.username }}</strong> voted for <strong>{{ vote.category.name }}</strong><br>
+                                <small>Vote ID: {{ vote.id }}</small>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <p>No food poll votes found.</p>
+                    {% endfor %}
+                </div>
+                {% if food_polls %}
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                        <small><strong>Total votes:</strong> {{ total_food_polls }}</small>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Presence Poll Votes -->
+            <div class="section">
+                <h2>👥 Presence Poll Status</h2>
+                <div class="item-list">
+                    {% for vote in presence_polls %}
+                        <div class="item">
+                            <div>
+                                <strong>{{ vote.user.username }}</strong>: 
+                                {% if vote.presence == 'present' %}
+                                    <span style="color: green;">✅ Present</span>
+                                {% else %}
+                                    <span style="color: red;">❌ Absent</span>
+                                {% endif %}
+                                <br>
+                                <small>Updated: {{ vote.updated_at|timesince }} ago</small><br>
+                                <small>Created: {{ vote.created_at|timesince }} ago</small>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <p>No presence votes found.</p>
+                    {% endfor %}
+                </div>
+                {% if presence_polls %}
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                        <small>
+                            <strong>Present:</strong> {{ present_votes }} | 
+                            <strong>Absent:</strong> {{ absent_votes }} | 
+                            <strong>Total:</strong> {{ total_presence_polls }}
+                        </small>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Database Models Overview -->
+        <div style="margin-top: 30px;">
+            <h2 style="color: #667eea; margin-bottom: 20px;">📊 Database Models Overview</h2>
+            <div class="dashboard-grid">
+                <!-- Categories Model -->
+                <div class="section">
+                    <h3>📂 Categories Model</h3>
+                    <p><strong>Fields:</strong> id, name</p>
+                    <p><strong>Relationships:</strong> One-to-Many with Restaurants</p>
+                    <div class="item-list" style="max-height: 200px; overflow-y: auto;">
+                        {% for category in categories %}
+                            <div class="item" style="padding: 8px; margin: 5px 0; background: #f9f9f9;">
+                                <strong>ID:</strong> {{ category.id }} | <strong>Name:</strong> {{ category.name }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Restaurants Model -->
+                <div class="section">
+                    <h3>🏪 Restaurants Model</h3>
+                    <p><strong>Fields:</strong> id, name, category_id</p>
+                    <p><strong>Relationships:</strong> Foreign Key to Categories</p>
+                    <div class="item-list" style="max-height: 200px; overflow-y: auto;">
+                        {% for restaurant in restaurants %}
+                            <div class="item" style="padding: 8px; margin: 5px 0; background: #f9f9f9;">
+                                <strong>ID:</strong> {{ restaurant.id }} | <strong>Name:</strong> {{ restaurant.name }}<br>
+                                <small>Category: {{ restaurant.category.name }} (ID: {{ restaurant.category.id }})</small>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Users Model -->
+                <div class="section">
+                    <h3>👤 Users Model</h3>
+                    <p><strong>Model:</strong> Django's built-in User model</p>
+                    <p><strong>Key Fields:</strong> id, username, email, date_joined</p>
+                    <div class="item-list" style="max-height: 200px; overflow-y: auto;">
+                        {% for user in users %}
+                            <div class="item" style="padding: 8px; margin: 5px 0; background: #f9f9f9;">
+                                <strong>ID:</strong> {{ user.id }} | <strong>Username:</strong> {{ user.username }}<br>
+                                <small>Email: {{ user.email }} | Joined: {{ user.date_joined|date }}</small>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Reviews Model -->
+                <div class="section">
+                    <h3>⭐ Reviews Model</h3>
+                    <p><strong>Fields:</strong> id, user_id, restaurant_id, rating, comment, created_at</p>
+                    <p><strong>Relationships:</strong> Foreign Keys to User and Restaurant</p>
+                    <div class="item-list" style="max-height: 200px; overflow-y: auto;">
+                        {% for review in reviews %}
+                            <div class="item" style="padding: 8px; margin: 5px 0; background: #f9f9f9;">
+                                <strong>ID:</strong> {{ review.id }} | <strong>Rating:</strong> {{ review.rating }}/5<br>
+                                <small>User: {{ review.user.username }} | Restaurant: {{ review.restaurant.name }}</small><br>
+                                <small>Comment: {{ review.comment|truncatechars:50 }}</small>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- FoodPoll Model -->
+                <div class="section">
+                    <h3>🍽️ FoodPoll Model</h3>
+                    <p><strong>Fields:</strong> id, user_id, category_id</p>
+                    <p><strong>Relationships:</strong> Foreign Keys to User and Categories</p>
+                    <div class="item-list" style="max-height: 200px; overflow-y: auto;">
+                        {% for vote in food_polls %}
+                            <div class="item" style="padding: 8px; margin: 5px 0; background: #f9f9f9;">
+                                <strong>ID:</strong> {{ vote.id }}<br>
+                                <small>User: {{ vote.user.username }} (ID: {{ vote.user.id }})</small><br>
+                                <small>Category: {{ vote.category.name }} (ID: {{ vote.category.id }})</small>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- PresencePoll Model -->
+                <div class="section">
+                    <h3>👥 PresencePoll Model</h3>
+                    <p><strong>Fields:</strong> id, user_id, presence, created_at, updated_at</p>
+                    <p><strong>Relationships:</strong> OneToOne with User</p>
+                    <p><strong>Choices:</strong> 'present' or 'absent'</p>
+                    <div class="item-list" style="max-height: 200px; overflow-y: auto;">
+                        {% for vote in presence_polls %}
+                            <div class="item" style="padding: 8px; margin: 5px 0; background: #f9f9f9;">
+                                <strong>ID:</strong> {{ vote.id }}<br>
+                                <small>User: {{ vote.user.username }} (ID: {{ vote.user.id }})</small><br>
+                                <small>Status: {{ vote.get_presence_display }}</small><br>
+                                <small>Updated: {{ vote.updated_at|date:"M d, Y H:i" }}</small>
+                            </div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         </div>

@@ -1,0 +1,642 @@
+<div class="bg-white border border-gray-200 rounded-lg shadow-sm p-6 w-full min-w-[20rem] my-4">
+    {% csrf_token %}
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-bold text-gray-800">Presenza</h3>
+        <button type="button" class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition duration-200 ease-in-out" title="Impostazioni">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+        </button>
+    </div>
+    
+    <!-- Timer di votazione -->
+    <div id="presence-voting-timer" class="mb-4 p-3 rounded-lg border">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span id="presence-timer-status" class="text-sm font-medium"></span>
+            </div>
+            <div id="presence-timer-countdown" class="text-sm font-mono"></div>
+        </div>
+        <div id="presence-timer-message" class="text-xs text-gray-500 mt-1"></div>
+    </div>
+    
+    <div id="presence-container" class="space-y-3">
+        <div class="poll-option bg-gray-50 border border-gray-200 rounded-lg p-3 cursor-pointer hover:bg-gray-100 transition duration-200 ease-in-out" 
+             data-presence-value="present" onclick="togglePresenceVote('present')">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="vote-indicator w-5 h-5 border-2 border-green-500 rounded-full flex items-center justify-center" 
+                         id="indicator-present">
+                        <div class="w-2 h-2 bg-green-500 rounded-full hidden" id="check-present"></div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span class="text-gray-700 font-medium">Presente</span>
+                    </div>
+                </div>
+                <div class="vote-count text-sm text-gray-500" id="count-present">
+                    <span id="votes-present">0</span> voti
+                </div>
+            </div>
+            
+            <!-- Barra di progresso -->
+            <div class="mt-2 bg-gray-200 rounded-full h-2">
+                <div class="bg-green-500 h-2 rounded-full transition-all duration-300 ease-in-out" 
+                     id="progress-present" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Opzione Assente -->
+        <div class="poll-option bg-gray-50 border border-gray-200 rounded-lg p-3 cursor-pointer hover:bg-gray-100 transition duration-200 ease-in-out" 
+             data-presence-value="absent" onclick="togglePresenceVote('absent')">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="vote-indicator w-5 h-5 border-2 border-red-500 rounded-full flex items-center justify-center" 
+                         id="indicator-absent">
+                        <div class="w-2 h-2 bg-red-500 rounded-full hidden" id="check-absent"></div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span class="text-gray-700 font-medium">Assente</span>
+                    </div>
+                </div>
+                <div class="vote-count text-sm text-gray-500" id="count-absent">
+                    <span id="votes-absent">0</span> voti
+                </div>
+            </div>
+            
+            <!-- Barra di progresso -->
+            <div class="mt-2 bg-gray-200 rounded-full h-2">
+                <div class="bg-red-500 h-2 rounded-full transition-all duration-300 ease-in-out" 
+                     id="progress-absent" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bottone info per mostrare tutti i votanti presenza -->
+    <div class="mt-4 flex justify-center">
+        <button type="button" 
+                onclick="showPresenceVoters()" 
+                class="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition duration-200 ease-in-out">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span class="text-sm font-medium">Mostra presenze</span>
+        </button>
+    </div>
+</div>
+
+<!-- Popup/Modal per mostrare votanti presenza -->
+<div id="presence-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden p-4">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] transform transition-all duration-300 ease-in-out flex flex-col">
+        <!-- Header del modal -->
+        <div class="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
+            <h3 id="presence-modal-title" class="text-lg font-semibold text-gray-800">Stato presenze</h3>
+            <button type="button" onclick="hidePresenceVoters()" class="text-gray-400 hover:text-gray-600 transition-colors duration-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Contenuto del modal con scroll -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar">
+            <div class="p-4">
+                <div id="presence-content" class="space-y-4">
+                    <!-- Le sezioni presenza verranno inserite qui dinamicamente -->
+                </div>
+                
+                <!-- Messaggio quando non ci sono votanti -->
+                <div id="no-presence-voters" class="text-center text-gray-500 py-8 hidden">
+                    <svg class="w-12 h-12 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    <p>Nessuno ha ancora votato</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer del modal -->
+        <div class="px-4 pb-4 flex-shrink-0">
+            <button type="button" onclick="hidePresenceVoters()" 
+                    class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition duration-200">
+                Chiudi
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+let userPresenceVote = null; // Tiene traccia del voto di presenza corrente dell'utente
+let presenceData = {
+    'present': { count: 0, voters: [] },
+    'absent': { count: 0, voters: [] }
+}; // Cache dei dati del sondaggio presenza
+
+// Inizializza il sondaggio presenza al caricamento della pagina
+document.addEventListener('DOMContentLoaded', function() {
+    loadPresenceData();
+});
+
+// Carica i dati iniziali del sondaggio presenza
+function loadPresenceData() {
+    fetch('/presence-poll/data/', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            presenceData = data.presence_data;
+            userPresenceVote = data.user_vote;
+            updatePresenceDisplay();
+        }
+    })
+    .catch(error => {
+        console.error('Errore nel caricamento dei dati presenza:', error);
+    });
+}
+
+// Gestisce il toggle del voto presenza
+function togglePresenceVote(presenceValue) {
+    // Controlla se il periodo di votazione è attivo
+    if (!presenceVotingPeriodActive) {
+        alert('Le votazioni sono chiuse. Puoi votare solo da giovedì 00:00 a venerdì 20:00.');
+        return;
+    }
+    
+    const newVote = userPresenceVote === presenceValue ? null : presenceValue;
+    
+    fetch('/presence-poll/vote/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify({
+            'presence_value': newVote
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            presenceData = data.presence_data;
+            userPresenceVote = data.user_vote;
+            updatePresenceDisplay();
+        } else {
+            alert('Errore nel salvare il voto presenza: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Errore nel votare presenza:', error);
+        alert('Errore di connessione. Riprova.');
+    });
+}
+
+// Aggiorna la visualizzazione del sondaggio presenza
+function updatePresenceDisplay() {
+    const totalVotes = presenceData.present.count + presenceData.absent.count;
+    
+    ['present', 'absent'].forEach(type => {
+        const data = presenceData[type];
+        const percentage = totalVotes > 0 ? (data.count / totalVotes * 100) : 0;
+        
+        // Aggiorna il contatore
+        const votesElement = document.getElementById(`votes-${type}`);
+        if (votesElement) {
+            votesElement.textContent = data.count;
+        }
+        
+        // Aggiorna la barra di progresso
+        const progressElement = document.getElementById(`progress-${type}`);
+        if (progressElement) {
+            progressElement.style.width = `${percentage}%`;
+        }
+        
+        // Aggiorna l'indicatore di voto
+        const indicator = document.getElementById(`check-${type}`);
+        const option = document.querySelector(`[data-presence-value="${type}"]`);
+        
+        if (indicator && option) {
+            if (userPresenceVote === type) {
+                indicator.classList.remove('hidden');
+                if (type === 'present') {
+                    option.classList.add('bg-green-50', 'border-green-300');
+                    option.classList.remove('bg-red-50', 'border-red-300');
+                } else {
+                    option.classList.add('bg-red-50', 'border-red-300');
+                    option.classList.remove('bg-green-50', 'border-green-300');
+                }
+            } else {
+                indicator.classList.add('hidden');
+                option.classList.remove('bg-green-50', 'border-green-300', 'bg-red-50', 'border-red-300');
+            }
+        }
+    });
+}
+
+// Mostra il popup con tutti i votanti presenza
+function showPresenceVoters() {
+    const modal = document.getElementById('presence-modal');
+    const title = document.getElementById('presence-modal-title');
+    const content = document.getElementById('presence-content');
+    const noVoters = document.getElementById('no-presence-voters');
+    
+    // Aggiorna il titolo
+    title.textContent = 'Stato presenze';
+    
+    // Pulisci il contenuto precedente
+    content.innerHTML = '';
+    
+    // Calcola totale votanti
+    const totalVoters = presenceData.present.count + presenceData.absent.count;
+    
+    if (totalVoters > 0) {
+        noVoters.classList.add('hidden');
+        content.classList.remove('hidden');
+        
+        // Sezione Presenti
+        const presentSection = createPresenceSection(
+            'present',
+            'Presenti',
+            'bg-green-50',
+            'border-green-200',
+            'text-green-800',
+            'bg-green-500',
+            presenceData.present
+        );
+        content.appendChild(presentSection);
+        
+        // Sezione Assenti
+        const absentSection = createPresenceSection(
+            'absent',
+            'Assenti',
+            'bg-red-50',
+            'border-red-200',
+            'text-red-800',
+            'bg-red-500',
+            presenceData.absent
+        );
+        content.appendChild(absentSection);
+        
+        // Aggiungi statistiche generali
+        const statsElement = document.createElement('div');
+        statsElement.className = 'mt-4 pt-3 border-t border-gray-200 text-center text-sm text-gray-500';
+        
+        const presentCount = presenceData.present.count;
+        const absentCount = presenceData.absent.count;
+        const presentPercentage = totalVoters > 0 ? ((presentCount / totalVoters) * 100).toFixed(0) : 0;
+        
+        statsElement.innerHTML = `
+            <div class="space-y-1">
+                <div>Totale votanti: ${totalVoters}</div>
+                <div class="flex justify-center space-x-4 text-xs">
+                    <span class="text-green-600">✓ ${presentCount} presenti (${presentPercentage}%)</span>
+                    <span class="text-red-600">✗ ${absentCount} assenti</span>
+                </div>
+            </div>
+        `;
+        content.appendChild(statsElement);
+        
+    } else {
+        // Mostra il messaggio "nessun votante"
+        content.classList.add('hidden');
+        noVoters.classList.remove('hidden');
+    }
+    
+    // Mostra il modal con animazione
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modal.querySelector('.bg-white').classList.add('scale-100');
+    }, 10);
+}
+
+// Crea una sezione per presenti o assenti
+function createPresenceSection(type, title, bgClass, borderClass, textClass, avatarBgClass, data) {
+    const section = document.createElement('div');
+    section.className = `border ${borderClass} rounded-lg p-3 ${bgClass}`;
+    
+    // Header della sezione
+    const header = document.createElement('div');
+    header.className = 'flex items-center justify-between mb-2';
+    
+    const icon = type === 'present' 
+        ? '<svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
+        : '<svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+    
+    header.innerHTML = `
+        <div class="flex items-center space-x-2">
+            ${icon}
+            <h4 class="font-medium ${textClass}">${title}</h4>
+        </div>
+        <span class="text-sm text-gray-500 bg-white px-2 py-1 rounded">${data.count} ${data.count === 1 ? 'voto' : 'voti'}</span>
+    `;
+    section.appendChild(header);
+    
+    // Lista votanti
+    if (data.voters && data.voters.length > 0) {
+        const votersContainer = document.createElement('div');
+        votersContainer.className = 'space-y-1';
+        
+        data.voters.forEach(voter => {
+            const voterElement = document.createElement('div');
+            voterElement.className = 'flex items-center space-x-2 p-1';
+            voterElement.innerHTML = `
+                <div class="w-6 h-6 ${avatarBgClass} text-white rounded-full flex items-center justify-center text-xs font-medium">
+                    ${voter.charAt(0).toUpperCase()}
+                </div>
+                <span class="text-sm text-gray-700">${voter}</span>
+            `;
+            votersContainer.appendChild(voterElement);
+        });
+        
+        section.appendChild(votersContainer);
+    } else {
+        const noVotersMsg = document.createElement('div');
+        noVotersMsg.className = 'text-sm text-gray-400 italic';
+        noVotersMsg.textContent = `Nessun ${type === 'present' ? 'presente' : 'assente'}`;
+        section.appendChild(noVotersMsg);
+    }
+    
+    return section;
+}
+
+// Nascondi il popup presenza
+function hidePresenceVoters() {
+    const modal = document.getElementById('presence-modal');
+    const modalContent = modal.querySelector('.bg-white');
+    
+    // Animazione di chiusura
+    modalContent.classList.remove('scale-100');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 200);
+}
+
+// Event listeners per chiusura modal presenza
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('presence-modal');
+    if (event.target === modal) {
+        hidePresenceVoters();
+    }
+});
+
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const modal = document.getElementById('presence-modal');
+        if (modal && !modal.classList.contains('hidden')) {
+            hidePresenceVoters();
+        }
+    }
+});
+
+// Aggiorna i dati presenza ogni 5 secondi per mantenere la sincronizzazione
+setInterval(loadPresenceData, 1000);
+
+// ===== LOGICA TIMER DI VOTAZIONE PRESENZA =====
+let presenceVotingPeriodActive = false;
+let presenceTimerInterval;
+
+// Inizializza il timer presence
+document.addEventListener('DOMContentLoaded', function() {
+    updatePresenceVotingTimer();
+    presenceTimerInterval = setInterval(updatePresenceVotingTimer, 1000);
+});
+
+// Calcola se siamo nel periodo di votazione (Giovedì 00:00 - Venerdì 20:00)
+function isPresenceVotingPeriodActive() {
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0 = Domenica, 1 = Lunedì, ..., 4 = Giovedì, 5 = Venerdì
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    
+    // Giovedì dalle 00:00 alle 23:59
+    if (dayOfWeek === 4) {
+        return true;
+    }
+    // Venerdì dalle 00:00 alle 20:00
+    else if (dayOfWeek === 5) {
+        return currentHour < 20 || (currentHour === 20 && currentMinute === 0);
+    }
+    
+    return false;
+}
+
+// Calcola il prossimo periodo di votazione
+function getNextPresenceVotingPeriod() {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    
+    // Calcola il prossimo giovedì
+    let daysUntilThursday;
+    if (dayOfWeek <= 4) {
+        daysUntilThursday = 4 - dayOfWeek;
+    } else {
+        daysUntilThursday = 7 - dayOfWeek + 4;
+    }
+    
+    const nextThursday = new Date(now);
+    nextThursday.setDate(now.getDate() + daysUntilThursday);
+    nextThursday.setHours(0, 0, 0, 0);
+    
+    return nextThursday;
+}
+
+// Calcola quando finisce il periodo di votazione corrente
+function getPresenceVotingPeriodEnd() {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    
+    if (dayOfWeek === 4) {
+        // Se è giovedì, finisce venerdì alle 20:00
+        const nextFriday = new Date(now);
+        nextFriday.setDate(now.getDate() + 1);
+        nextFriday.setHours(20, 0, 0, 0);
+        return nextFriday;
+    } else if (dayOfWeek === 5) {
+        // Se è venerdì, finisce oggi alle 20:00
+        const today = new Date(now);
+        today.setHours(20, 0, 0, 0);
+        return today;
+    }
+    
+    return null;
+}
+
+// Formatta il tempo rimanente per presence
+function formatPresenceTimeRemaining(milliseconds) {
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const days = Math.floor(totalSeconds / (24 * 3600));
+    const hours = Math.floor((totalSeconds % (24 * 3600)) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    if (days > 0) {
+        return `${days}g ${hours}h ${minutes}m`;
+    } else if (hours > 0) {
+        return `${hours}h ${minutes}m ${seconds}s`;
+    } else if (minutes > 0) {
+        return `${minutes}m ${seconds}s`;
+    } else {
+        return `${seconds}s`;
+    }
+}
+
+// Aggiorna il display del timer presenza
+function updatePresenceVotingTimer() {
+    const timer = document.getElementById('presence-voting-timer');
+    const statusElement = document.getElementById('presence-timer-status');
+    const countdownElement = document.getElementById('presence-timer-countdown');
+    const messageElement = document.getElementById('presence-timer-message');
+    
+    if (!timer || !statusElement || !countdownElement || !messageElement) return;
+    
+    const isActive = isPresenceVotingPeriodActive();
+    const now = new Date();
+    
+    if (isActive) {
+        const endTime = getPresenceVotingPeriodEnd();
+        const timeRemaining = endTime - now;
+        
+        if (timeRemaining > 0) {
+            presenceVotingPeriodActive = true;
+            timer.className = 'mb-4 p-3 rounded-lg border border-green-200 bg-green-50';
+            statusElement.textContent = 'Votazioni APERTE';
+            statusElement.className = 'text-sm font-medium text-green-700';
+            countdownElement.textContent = formatPresenceTimeRemaining(timeRemaining);
+            countdownElement.className = 'text-sm font-mono text-green-600';
+            messageElement.textContent = 'Puoi votare fino a venerdì alle 20:00';
+        } else {
+            presenceVotingPeriodActive = false;
+            timer.className = 'mb-4 p-3 rounded-lg border border-red-200 bg-red-50';
+            statusElement.textContent = 'Votazioni CHIUSE';
+            statusElement.className = 'text-sm font-medium text-red-700';
+            countdownElement.textContent = '';
+            messageElement.textContent = 'Le votazioni sono terminate per questa settimana';
+        }
+    } else {
+        const nextPeriod = getNextPresenceVotingPeriod();
+        const timeUntilNext = nextPeriod - now;
+        
+        presenceVotingPeriodActive = false;
+        timer.className = 'mb-4 p-3 rounded-lg border border-gray-200 bg-gray-50';
+        statusElement.textContent = 'Votazioni CHIUSE';
+        statusElement.className = 'text-sm font-medium text-gray-700';
+        countdownElement.textContent = formatPresenceTimeRemaining(timeUntilNext);
+        countdownElement.className = 'text-sm font-mono text-gray-600';
+        messageElement.textContent = 'Prossima apertura: giovedì alle 00:00';
+    }
+    
+    // Disabilita/abilita le opzioni di voto presenza
+    updatePresenceVotingOptions();
+}
+
+// Disabilita o abilita le opzioni di voto presenza
+function updatePresenceVotingOptions() {
+    const presenceOptions = document.querySelectorAll('[data-presence-value]');
+    
+    presenceOptions.forEach(option => {
+        if (presenceVotingPeriodActive) {
+            option.classList.remove('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+            option.classList.add('cursor-pointer', 'hover:bg-gray-100');
+        } else {
+            option.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+            option.classList.remove('cursor-pointer', 'hover:bg-gray-100');
+        }
+    });
+}
+</script>
+
+<!-- CSS aggiuntivo per animazioni -->
+<style>
+.poll-option:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.vote-indicator {
+    transition: all 0.2s ease-in-out;
+}
+
+.poll-option.voted-present {
+    background-color: #dcfce7 !important;
+    border-color: #86efac !important;
+}
+
+.poll-option.voted-absent {
+    background-color: #fee2e2 !important;
+    border-color: #fca5a5 !important;
+}
+
+/* Scrollbar personalizzata elegante */
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+    transition: background 0.2s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:active {
+    background: #64748b;
+}
+
+/* Animazioni per il modal presenza */
+#presence-modal {
+    backdrop-filter: blur(4px);
+}
+
+#presence-modal .bg-white {
+    transform: scale(0.9);
+    transition: transform 0.2s ease-in-out;
+}
+
+#presence-modal .bg-white.scale-100 {
+    transform: scale(1);
+}
+
+/* Animazione per le sezioni presenza */
+#presence-content > div {
+    animation: slideIn 0.3s ease-out forwards;
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+#presence-content > div:nth-child(1) { animation-delay: 0.1s; }
+#presence-content > div:nth-child(2) { animation-delay: 0.2s; }
+#presence-content > div:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes slideIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>

@@ -1,24 +1,1081 @@
-<div class="bg-white border border-gray-200 rounded-lg shadow-sm p-6 w-80 my-4">
-    <div class="flex justify-between items-center mb-4">
+<div class="bg-white border border-gray-200 rounded-lg shadow-sm p-6 w-full min-w-[25rem] h-[calc(100vh-10rem)] min-h-[600px] m-4 flex flex-col">
+    {% csrf_token %}
+    <div class="flex justify-between items-center mb-4 flex-shrink-0">
         <h3 class="text-xl font-bold text-gray-800">Sondaggio</h3>
-        <button type="button" class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition duration-200 ease-in-out" title="Impostazioni">
+        <button type="button" onclick="showTimerSettings()" class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition duration-200 ease-in-out" title="Impostazioni Timer">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.50 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
             </svg>
         </button>
     </div>
-    <form method="post" action="" class="space-y-3">
-        {% csrf_token %}
+    
+    <!-- Timer di votazione -->
+    <div id="voting-timer" class="mb-4 p-3 rounded-lg border flex-shrink-0">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span id="timer-status" class="text-sm font-medium"></span>
+            </div>
+            <div id="timer-countdown" class="text-sm font-mono"></div>
+        </div>
+        <div id="timer-message" class="text-xs text-gray-500 mt-1"></div>
+    </div>
+    
+    <!-- Area scrollabile per le opzioni del sondaggio -->
+    <div id="poll-container" class="space-y-3 overflow-y-auto flex-1 custom-scrollbar pr-2">
         {% for category in categories %}
-            <div class="flex items-center space-x-3">
-                <input type="checkbox" id="cat{{ category.id }}" name="category_id" value="{{ category.id }}" 
-                       class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2">
-                <label for="cat{{ category.id }}" class="text-gray-700 font-medium">{{ category.name }}</label>
+            <div class="poll-option bg-gray-50 border border-gray-200 rounded-lg p-3 cursor-pointer hover:bg-gray-100 transition duration-200 ease-in-out" 
+                 data-category-id="{{ category.id }}" onclick="toggleVote({{ category.id }})">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="vote-indicator w-5 h-5 border-2 border-blue-500 rounded-full flex items-center justify-center" 
+                             id="indicator-{{ category.id }}">
+                            <div class="w-2 h-2 bg-blue-500 rounded-full hidden" id="check-{{ category.id }}"></div>
+                        </div>
+                        <span class="text-gray-700 font-medium">{{ category.name }}</span>
+                    </div>
+                    <div class="vote-count text-sm text-gray-500" id="count-{{ category.id }}">
+                        <span id="votes-{{ category.id }}">0</span> voti
+                    </div>
+                </div>
+                
+                <!-- Barra di progresso -->
+                <div class="mt-2 bg-gray-200 rounded-full h-2">
+                    <div class="bg-blue-500 h-2 rounded-full transition-all duration-300 ease-in-out" 
+                         id="progress-{{ category.id }}" style="width: 0%"></div>
+                </div>
             </div>
         {% endfor %}
-        <button type="submit" class="mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg transition duration-200 ease-in-out shadow-sm hover:shadow-md">
-            Invia Voto
-        </button>
-    </form>
+    </div>
+    
+    <!-- Footer fisso del sondaggio -->
+    <div class="flex-shrink-0 mt-4">
+        <!-- Bottone info per mostrare tutti i votanti -->
+        <div class="flex justify-center">
+            <button type="button" 
+                    onclick="showAllVoters()" 
+                    class="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition duration-200 ease-in-out">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="text-sm font-medium">Mostra chi ha votato</span>
+            </button>
+        </div>
+    </div>
 </div>
+
+<!-- Popup/Modal per mostrare tutti i votanti -->
+<div id="voters-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden p-4">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] transform transition-all duration-300 ease-in-out flex flex-col">
+        <!-- Header del modal -->
+        <div class="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
+            <h3 id="modal-title" class="text-lg font-semibold text-gray-800">Votanti per categoria</h3>
+            <button type="button" onclick="hideVoters()" class="text-gray-400 hover:text-gray-600 transition-colors duration-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Contenuto del modal con scroll -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar">
+            <div class="p-4">
+                <div id="voters-content" class="space-y-4">
+                    <!-- Le categorie verranno inserite qui dinamicamente -->
+                </div>
+                
+                <!-- Messaggio quando non ci sono votanti -->
+                <div id="no-voters" class="text-center text-gray-500 py-8 hidden">
+                    <svg class="w-12 h-12 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    <p>Nessuno ha ancora votato</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer del modal -->
+        <div class="px-4 pb-4 flex-shrink-0">
+            <button type="button" onclick="hideVoters()" 
+                    class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition duration-200">
+                Chiudi
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal per impostazioni del timer -->
+<div id="timer-settings-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden p-4">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg transform transition-all duration-300 ease-in-out">
+        <!-- Header del modal -->
+        <div class="flex items-center justify-between p-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-800">⚙️ Impostazioni Periodo Votazioni</h3>
+            <button type="button" onclick="hideTimerSettings()" class="text-gray-400 hover:text-gray-600 transition-colors duration-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Contenuto del modal -->
+        <div class="p-6 space-y-6">
+            <!-- Abilita Timer Personalizzato -->
+            <div class="space-y-3">
+                <label class="flex items-center space-x-3">
+                    <input type="checkbox" id="custom-timer-enabled" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2">
+                    <div>
+                        <span class="text-sm font-medium text-gray-900">� Usa Orari Personalizzati</span>
+                        <p class="text-xs text-gray-500">Configura un periodo di votazione diverso da quello predefinito</p>
+                    </div>
+                </label>
+            </div>
+            
+            <!-- Impostazioni Periodo di Votazione -->
+            <div id="custom-timer-controls" class="space-y-4 p-4 bg-gray-50 rounded-lg hidden">
+                <h4 class="text-sm font-semibold text-gray-800">📅 Configurazione Periodo Votazioni</h4>
+                
+                <!-- Giorno di inizio -->
+                <div class="space-y-2">
+                    <label class="text-sm font-medium text-gray-700">Giorno di inizio:</label>
+                    <select id="start-day" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="0">Domenica</option>
+                        <option value="1">Lunedì</option>
+                        <option value="2">Martedì</option>
+                        <option value="3">Mercoledì</option>
+                        <option value="4" selected>Giovedì</option>
+                        <option value="5">Venerdì</option>
+                        <option value="6">Sabato</option>
+                    </select>
+                </div>
+                
+                <!-- Ora di inizio -->
+                <div class="space-y-2">
+                    <label class="text-sm font-medium text-gray-700">Ora di inizio:</label>
+                    <input type="time" id="start-time" value="00:00" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <!-- Giorno di fine -->
+                <div class="space-y-2">
+                    <label class="text-sm font-medium text-gray-700">Giorno di fine:</label>
+                    <select id="end-day" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="0">Domenica</option>
+                        <option value="1">Lunedì</option>
+                        <option value="2">Martedì</option>
+                        <option value="3">Mercoledì</option>
+                        <option value="4">Giovedì</option>
+                        <option value="5" selected>Venerdì</option>
+                        <option value="6">Sabato</option>
+                    </select>
+                </div>
+                
+                <!-- Ora di fine -->
+                <div class="space-y-2">
+                    <label class="text-sm font-medium text-gray-700">Ora di fine:</label>
+                    <input type="time" id="end-time" value="20:00" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <!-- Override immediato -->
+                <div class="space-y-3 pt-4 border-t border-gray-200">
+                    <h5 class="text-sm font-semibold text-gray-800">🚀 Override Immediato</h5>
+                    <div class="flex space-x-3">
+                        <button type="button" onclick="forceVotingOpen()" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition duration-200">
+                            ✅ Forza APERTO
+                        </button>
+                        <button type="button" onclick="forceVotingClosed()" class="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition duration-200">
+                            ❌ Forza CHIUSO
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stato attuale -->
+            <div class="p-4 bg-blue-50 rounded-lg">
+                <h4 class="text-sm font-semibold text-blue-800 mb-2">📊 Stato Attuale</h4>
+                <div class="text-sm text-blue-700 space-y-1">
+                    <div>Giorno corrente: <span id="current-day" class="font-mono"></span></div>
+                    <div>Ora corrente: <span id="current-time" class="font-mono"></span></div>
+                    <div>Stato votazioni: <span id="current-status" class="font-semibold"></span></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer del modal -->
+        <div class="px-6 pb-6 flex space-x-3">
+            <button type="button" onclick="applyTimerSettings()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition duration-200">
+                💾 Applica Impostazioni
+            </button>
+            <button type="button" onclick="resetTimerSettings()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition duration-200">
+                🔄 Reset
+            </button>
+            <button type="button" onclick="hideTimerSettings()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition duration-200">
+                Chiudi
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+let userVotes = []; // Array che tiene traccia dei voti correnti dell'utente
+let pollData = {}; // Cache dei dati del sondaggio
+
+// Inizializza il sondaggio al caricamento della pagina
+document.addEventListener('DOMContentLoaded', function() {
+    // Carica le impostazioni timer salvate
+    loadTimerSettings();
+    
+    // Inizializza gli event listener del modal
+    initializeTimerModalListeners();
+    
+    // Inizializza il timer prima di caricare i dati
+    updateVotingTimer();
+    timerInterval = setInterval(updateVotingTimer, 1000);
+    
+    // Carica i dati del sondaggio
+    loadPollData();
+});
+
+// Carica i dati iniziali del sondaggio
+function loadPollData() {
+    console.log('=== DEBUG LOAD DATA ===');
+    console.log('Loading poll data from /food-poll/data/...');
+    
+    fetch('/food-poll/data/', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => {
+        console.log('Load data response status:', response.status);
+        console.log('Load data response ok:', response.ok);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Load data response:', data);
+        if (data.success) {
+            pollData = data.poll_data;
+            userVotes = data.user_votes || [];
+            updatePollDisplay();
+        } else {
+            console.error('Load data failed:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Errore nel caricamento dei dati:', error);
+        alert('Errore nel caricamento dati: ' + error.message);
+    });
+}
+
+// Gestisce il toggle del voto
+function toggleVote(categoryId) {
+    console.log('=== DEBUG VOTE ===');
+    console.log('Category ID:', categoryId);
+    console.log('Voting period active:', votingPeriodActive);
+    
+    
+    
+    // Debug CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    console.log('CSRF token element:', csrfToken);
+    console.log('CSRF token value:', csrfToken ? csrfToken.value : 'NOT FOUND');
+    
+    if (!csrfToken) {
+        alert('Errore: Token CSRF non trovato');
+        return;
+    }
+    
+    console.log('Sending request to /food-poll/vote/...');
+    
+    fetch('/food-poll/vote/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken.value,
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify({
+            'category_id': categoryId
+        })
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+            pollData = data.poll_data;
+            userVotes = data.user_votes || [];
+            updatePollDisplay();
+        } else {
+            alert('Errore nel salvare il voto: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Errore dettagliato nel votare:', error);
+    });
+}
+
+// Aggiorna la visualizzazione del sondaggio
+function updatePollDisplay() {
+    // Calcola il numero totale di utenti che hanno votato (non il totale dei voti)
+    const allVoters = new Set();
+    Object.values(pollData).forEach(item => {
+        if (item.voters) {
+            item.voters.forEach(voter => allVoters.add(voter));
+        }
+    });
+    const totalUniqueVoters = allVoters.size;
+    
+    Object.keys(pollData).forEach(categoryId => {
+        const data = pollData[categoryId];
+        const votersCount = data.voters ? data.voters.length : 0;
+        const percentage = totalUniqueVoters > 0 ? (votersCount / totalUniqueVoters * 100) : 0;
+        
+        // Aggiorna il contatore
+        const votesElement = document.getElementById(`votes-${categoryId}`);
+        if (votesElement) {
+            votesElement.textContent = data.count;
+        }
+        
+        // Aggiorna la barra di progresso
+        const progressElement = document.getElementById(`progress-${categoryId}`);
+        if (progressElement) {
+            progressElement.style.width = `${percentage}%`;
+        }
+        
+        // Aggiorna l'indicatore di voto (per voti multipli)
+        const indicator = document.getElementById(`check-${categoryId}`);
+        const optionElement = document.querySelector(`[data-category-id="${categoryId}"]`);
+        
+        if (indicator && optionElement) {
+            if (userVotes.includes(parseInt(categoryId))) {
+                indicator.classList.remove('hidden');
+                optionElement.classList.add('bg-blue-50', 'border-blue-300');
+            } else {
+                indicator.classList.add('hidden');
+                optionElement.classList.remove('bg-blue-50', 'border-blue-300');
+            }
+        }
+    });
+    
+    // Commento: updateInfoMessage() rimosso perché causava errore
+    // updateInfoMessage();
+}
+
+// Mostra il popup con tutti i votanti ordinati per numero di voti
+function showAllVoters() {
+    const modal = document.getElementById('voters-modal');
+    const title = document.getElementById('modal-title');
+    const content = document.getElementById('voters-content');
+    const noVoters = document.getElementById('no-voters');
+    
+    // Aggiorna il titolo
+    title.textContent = 'Votanti per categoria';
+    
+    // Pulisci il contenuto precedente
+    content.innerHTML = '';
+    
+    // Crea array di categorie con i loro dati e ordina per numero di voti (decrescente)
+    const categoriesArray = Object.keys(pollData).map(categoryId => ({
+        id: categoryId,
+        name: pollData[categoryId].category_name,
+        voters: pollData[categoryId].voters || [],
+        count: pollData[categoryId].count || 0
+    })).sort((a, b) => b.count - a.count);
+    
+    // Controlla se ci sono votanti in totale
+    const totalVoters = categoriesArray.reduce((sum, cat) => sum + cat.count, 0);
+    
+    if (totalVoters > 0) {
+        noVoters.classList.add('hidden');
+        content.classList.remove('hidden');
+        
+        // Crea sezione per ogni categoria
+        categoriesArray.forEach((category, index) => {
+            const categorySection = document.createElement('div');
+            categorySection.className = 'border border-gray-200 rounded-lg p-3 bg-gray-50';
+            
+            // Header della categoria
+            const categoryHeader = document.createElement('div');
+            categoryHeader.className = 'flex items-center justify-between mb-2';
+            categoryHeader.innerHTML = `
+                <h4 class="font-medium text-gray-800">${category.name}</h4>
+                <span class="text-sm text-gray-500 bg-white px-2 py-1 rounded">${category.count} voti</span>
+            `;
+            categorySection.appendChild(categoryHeader);
+            
+            // Lista votanti per questa categoria
+            if (category.voters && category.voters.length > 0) {
+                const votersContainer = document.createElement('div');
+                votersContainer.className = 'space-y-1';
+                
+                category.voters.forEach(voter => {
+                    const voterElement = document.createElement('div');
+                    voterElement.className = 'flex items-center space-x-2 p-1';
+                    voterElement.innerHTML = `
+                        <div class="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-medium">
+                            ${voter.charAt(0).toUpperCase()}
+                        </div>
+                        <span class="text-sm text-gray-700">${voter}</span>
+                    `;
+                    votersContainer.appendChild(voterElement);
+                });
+                
+                categorySection.appendChild(votersContainer);
+            } else {
+                const noVotersMsg = document.createElement('div');
+                noVotersMsg.className = 'text-sm text-gray-400 italic';
+                noVotersMsg.textContent = 'Nessun voto';
+                categorySection.appendChild(noVotersMsg);
+            }
+            
+            content.appendChild(categorySection);
+        });
+        
+        // Aggiungi statistiche generali
+        const statsElement = document.createElement('div');
+        statsElement.className = 'mt-4 pt-3 border-t border-gray-200 text-center text-sm text-gray-500';
+        statsElement.textContent = `Totale voti: ${totalVoters}`;
+        content.appendChild(statsElement);
+        
+    } else {
+        // Mostra il messaggio "nessun votante"
+        content.classList.add('hidden');
+        noVoters.classList.remove('hidden');
+    }
+    
+    // Mostra il modal con animazione
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modal.querySelector('.bg-white').classList.add('scale-100');
+    }, 10);
+}
+
+// Nascondi il popup dei votanti
+function hideVoters() {
+    const modal = document.getElementById('voters-modal');
+    const modalContent = modal.querySelector('.bg-white');
+    
+    // Animazione di chiusura
+    modalContent.classList.remove('scale-100');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 200);
+}
+
+// Chiudi il modal cliccando fuori
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('voters-modal');
+    if (event.target === modal) {
+        hideVoters();
+    }
+});
+
+// Chiudi il modal con il tasto Escape
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const modal = document.getElementById('voters-modal');
+        if (!modal.classList.contains('hidden')) {
+            hideVoters();
+        }
+    }
+});
+
+// Aggiorna i dati ogni 5 secondi per mantenere la sincronizzazione
+setInterval(loadPollData, 1000);
+
+// ===== LOGICA TIMER DI VOTAZIONE =====
+let votingPeriodActive = false;
+let timerInterval;
+
+// ===== IMPOSTAZIONI TIMER UTENTE =====
+let customTimerEnabled = false;
+let startDay = 4; // Giovedì (default)
+let startTime = { hour: 0, minute: 0 }; // 00:00 (default)
+let endDay = 5; // Venerdì (default)
+let endTime = { hour: 20, minute: 0 }; // 20:00 (default)
+let forceVotingStatus = null; // null, 'open', 'closed'
+
+// Carica impostazioni dal localStorage
+function loadTimerSettings() {
+    const saved = localStorage.getItem('votingTimerSettings');
+    if (saved) {
+        try {
+            const settings = JSON.parse(saved);
+            customTimerEnabled = settings.customTimerEnabled || false;
+            startDay = settings.startDay || 4;
+            startTime = settings.startTime || { hour: 0, minute: 0 };
+            endDay = settings.endDay || 5;
+            endTime = settings.endTime || { hour: 20, minute: 0 };
+            console.log('Impostazioni timer caricate:', settings);
+        } catch (e) {
+            console.warn('Errore nel caricamento impostazioni timer:', e);
+        }
+    }
+}
+
+// Salva impostazioni nel localStorage
+function saveTimerSettings() {
+    const settings = {
+        customTimerEnabled,
+        startDay,
+        startTime,
+        endDay,
+        endTime
+    };
+    localStorage.setItem('votingTimerSettings', JSON.stringify(settings));
+    console.log('Impostazioni timer salvate:', settings);
+}
+
+// Calcola se siamo nel periodo di votazione (con impostazioni personalizzate)
+function isVotingPeriodActive() {
+    // Se c'è un override forzato, usalo
+    if (forceVotingStatus === 'open') return true;
+    if (forceVotingStatus === 'closed') return false;
+    
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0 = Domenica, 1 = Lunedì, ..., 4 = Giovedì, 5 = Venerdì
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    
+    // Se le impostazioni personalizzate sono attive, usale
+    if (customTimerEnabled) {
+        return isWithinCustomPeriod(now, dayOfWeek, currentHour, currentMinute);
+    }
+    
+    // Logica predefinita: Giovedì 00:00 - Venerdì 20:00
+    if (dayOfWeek === 4) {
+        return true; // Giovedì dalle 00:00 alle 23:59
+    } else if (dayOfWeek === 5) {
+        return currentHour < 20 || (currentHour === 20 && currentMinute === 0); // Venerdì dalle 00:00 alle 20:00
+    }
+    
+    return false;
+}
+
+// Verifica se siamo nel periodo personalizzato
+function isWithinCustomPeriod(now, dayOfWeek, currentHour, currentMinute) {
+    const customStartDay = startDay;
+    const customEndDay = endDay;
+    const startHour = startTime.hour;
+    const startMinute = startTime.minute;
+    const endHour = endTime.hour;
+    const endMinute = endTime.minute;
+    
+    // Caso semplice: stesso giorno
+    if (customStartDay === customEndDay) {
+        if (dayOfWeek === customStartDay) {
+            const currentTime = currentHour * 60 + currentMinute;
+            const startTimeMinutes = startHour * 60 + startMinute;
+            const endTimeMinutes = endHour * 60 + endMinute;
+            return currentTime >= startTimeMinutes && currentTime <= endTimeMinutes;
+        }
+        return false;
+    }
+    
+    // Caso complesso: periodo che attraversa più giorni
+    if (customStartDay <= customEndDay) {
+        // Periodo normale (es: Giovedì-Venerdì)
+        if (dayOfWeek < customStartDay || dayOfWeek > customEndDay) return false;
+        
+        if (dayOfWeek === customStartDay) {
+            const currentTime = currentHour * 60 + currentMinute;
+            const startTimeMinutes = startHour * 60 + startMinute;
+            return currentTime >= startTimeMinutes;
+        }
+        
+        if (dayOfWeek === customEndDay) {
+            const currentTime = currentHour * 60 + currentMinute;
+            const endTimeMinutes = endHour * 60 + endMinute;
+            return currentTime <= endTimeMinutes;
+        }
+        
+        return true; // Giorno intermedio
+    } else {
+        // Periodo che attraversa la settimana (es: Sabato-Lunedì)
+        if (dayOfWeek >= customStartDay || dayOfWeek <= customEndDay) {
+            if (dayOfWeek === customStartDay) {
+                const currentTime = currentHour * 60 + currentMinute;
+                const startTimeMinutes = startHour * 60 + startMinute;
+                return currentTime >= startTimeMinutes;
+            }
+            
+            if (dayOfWeek === customEndDay) {
+                const currentTime = currentHour * 60 + currentMinute;
+                const endTimeMinutes = endHour * 60 + endMinute;
+                return currentTime <= endTimeMinutes;
+            }
+            
+            return true;
+        }
+        return false;
+    }
+}
+
+// Calcola il prossimo periodo di votazione
+function getNextVotingPeriod() {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    
+    // Calcola il prossimo giovedì
+    let daysUntilThursday;
+    if (dayOfWeek <= 4) {
+        daysUntilThursday = 4 - dayOfWeek;
+    } else {
+        daysUntilThursday = 7 - dayOfWeek + 4;
+    }
+    
+    const nextThursday = new Date(now);
+    nextThursday.setDate(now.getDate() + daysUntilThursday);
+    nextThursday.setHours(0, 0, 0, 0);
+    
+    return nextThursday;
+}
+
+// Calcola quando finisce il periodo di votazione corrente
+function getVotingPeriodEnd() {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    
+    if (dayOfWeek === 4) {
+        // Se è giovedì, finisce venerdì alle 20:00
+        const nextFriday = new Date(now);
+        nextFriday.setDate(now.getDate() + 1);
+        nextFriday.setHours(20, 0, 0, 0);
+        return nextFriday;
+    } else if (dayOfWeek === 5) {
+        // Se è venerdì, finisce oggi alle 20:00
+        const today = new Date(now);
+        today.setHours(20, 0, 0, 0);
+        return today;
+    }
+    
+    return null;
+}
+
+// Formatta il tempo rimanente
+function formatTimeRemaining(milliseconds) {
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const days = Math.floor(totalSeconds / (24 * 3600));
+    const hours = Math.floor((totalSeconds % (24 * 3600)) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    if (days > 0) {
+        return `${days}g ${hours}h ${minutes}m`;
+    } else if (hours > 0) {
+        return `${hours}h ${minutes}m ${seconds}s`;
+    } else if (minutes > 0) {
+        return `${minutes}m ${seconds}s`;
+    } else {
+        return `${seconds}s`;
+    }
+}
+
+// Aggiorna il display del timer
+function updateVotingTimer() {
+    console.log('=== DEBUG TIMER ===');
+    const timer = document.getElementById('voting-timer');
+    const statusElement = document.getElementById('timer-status');
+    const countdownElement = document.getElementById('timer-countdown');
+    const messageElement = document.getElementById('timer-message');
+    
+    console.log('Timer elements found:', {
+        timer: !!timer,
+        status: !!statusElement,
+        countdown: !!countdownElement,
+        message: !!messageElement
+    });
+    
+    if (!timer || !statusElement || !countdownElement || !messageElement) {
+        console.warn('Timer elements not found, skipping timer update');
+        return;
+    }
+    
+    const isActive = isVotingPeriodActive();
+    const now = new Date();
+    
+    console.log('Timer state:', {
+        isActive: isActive,
+        dayOfWeek: now.getDay(),
+        currentHour: now.getHours(),
+        votingPeriodActive: votingPeriodActive
+    });
+    
+    if (isActive) {
+        const endTime = getVotingPeriodEnd();
+        const timeRemaining = endTime - now;
+        
+        if (timeRemaining > 0) {
+            votingPeriodActive = true;
+            timer.className = 'mb-4 p-3 rounded-lg border border-green-200 bg-green-50';
+            statusElement.textContent = 'Votazioni APERTE';
+            statusElement.className = 'text-sm font-medium text-green-700';
+            countdownElement.textContent = formatTimeRemaining(timeRemaining);
+            countdownElement.className = 'text-sm font-mono text-green-600';
+            messageElement.textContent = 'Puoi votare fino a venerdì alle 20:00';
+        } else {
+            votingPeriodActive = false;
+            timer.className = 'mb-4 p-3 rounded-lg border border-red-200 bg-red-50';
+            statusElement.textContent = 'Votazioni CHIUSE';
+            statusElement.className = 'text-sm font-medium text-red-700';
+            countdownElement.textContent = '';
+            messageElement.textContent = 'Le votazioni sono terminate per questa settimana';
+        }
+    } else {
+        const nextPeriod = getNextVotingPeriod();
+        const timeUntilNext = nextPeriod - now;
+        
+        votingPeriodActive = false;
+        timer.className = 'mb-4 p-3 rounded-lg border border-gray-200 bg-gray-50';
+        statusElement.textContent = 'Votazioni CHIUSE';
+        statusElement.className = 'text-sm font-medium text-gray-700';
+        countdownElement.textContent = formatTimeRemaining(timeUntilNext);
+        countdownElement.className = 'text-sm font-mono text-gray-600';
+        messageElement.textContent = 'Prossima apertura: giovedì alle 00:00';
+    }
+    
+    // Disabilita/abilita le opzioni di voto
+    updateVotingOptions();
+}
+
+// Disabilita o abilita le opzioni di voto
+function updateVotingOptions() {
+    const pollOptions = document.querySelectorAll('.poll-option');
+    
+    pollOptions.forEach(option => {
+        if (votingPeriodActive) {
+            option.classList.remove('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+            option.classList.add('cursor-pointer', 'hover:bg-gray-100');
+        } else {
+            option.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+            option.classList.remove('cursor-pointer', 'hover:bg-gray-100');
+        }
+    });
+}
+
+// ===== FUNZIONI GESTIONE POPUP IMPOSTAZIONI TIMER =====
+
+// Mostra il popup impostazioni timer
+function showTimerSettings() {
+    const modal = document.getElementById('timer-settings-modal');
+    
+    // Carica i valori attuali nei controlli
+    loadCurrentTimerSettings();
+    
+    // Aggiorna lo stato corrente
+    updateCurrentStatusDisplay();
+    
+    // Mostra il modal
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modal.querySelector('.bg-white').classList.add('scale-100');
+    }, 10);
+}
+
+// Nasconde il popup impostazioni timer
+function hideTimerSettings() {
+    const modal = document.getElementById('timer-settings-modal');
+    const modalContent = modal.querySelector('.bg-white');
+    
+    modalContent.classList.remove('scale-100');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 200);
+}
+
+// Carica le impostazioni attuali nei controlli
+function loadCurrentTimerSettings() {
+    document.getElementById('custom-timer-enabled').checked = customTimerEnabled;
+    document.getElementById('start-day').value = startDay;
+    document.getElementById('start-time').value = `${startTime.hour.toString().padStart(2, '0')}:${startTime.minute.toString().padStart(2, '0')}`;
+    document.getElementById('end-day').value = endDay;
+    document.getElementById('end-time').value = `${endTime.hour.toString().padStart(2, '0')}:${endTime.minute.toString().padStart(2, '0')}`;
+    
+    // Mostra/nasconde i controlli personalizzati
+    const customControls = document.getElementById('custom-timer-controls');
+    if (customTimerEnabled) {
+        customControls.classList.remove('hidden');
+    } else {
+        customControls.classList.add('hidden');
+    }
+}
+
+// Inizializza gli event listener per il modal (chiamata una sola volta)
+function initializeTimerModalListeners() {
+    const customTimerCheckbox = document.getElementById('custom-timer-enabled');
+    const customControls = document.getElementById('custom-timer-controls');
+    
+    // Rimuovi eventuali listener precedenti
+    customTimerCheckbox.removeEventListener('change', handleCustomTimerToggle);
+    
+    // Aggiungi il nuovo listener
+    customTimerCheckbox.addEventListener('change', handleCustomTimerToggle);
+}
+
+// Handler per il toggle del timer personalizzato
+function handleCustomTimerToggle() {
+    const customControls = document.getElementById('custom-timer-controls');
+    if (this.checked) {
+        customControls.classList.remove('hidden');
+    } else {
+        customControls.classList.add('hidden');
+    }
+}
+
+// Aggiorna il display dello stato corrente
+function updateCurrentStatusDisplay() {
+    const now = new Date();
+    const days = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
+    
+    document.getElementById('current-day').textContent = `${days[now.getDay()]} (${now.getDay()})`;
+    document.getElementById('current-time').textContent = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    
+    const isActive = isVotingPeriodActive();
+    const statusElement = document.getElementById('current-status');
+    if (isActive) {
+        statusElement.textContent = '🟢 APERTO';
+        statusElement.className = 'font-semibold text-green-600';
+    } else {
+        statusElement.textContent = '🔴 CHIUSO';
+        statusElement.className = 'font-semibold text-red-600';
+    }
+}
+
+// Applica le impostazioni del timer
+function applyTimerSettings() {
+    customTimerEnabled = document.getElementById('custom-timer-enabled').checked;
+    
+    if (customTimerEnabled) {
+        startDay = parseInt(document.getElementById('start-day').value);
+        endDay = parseInt(document.getElementById('end-day').value);
+        
+        const startTimeValue = document.getElementById('start-time').value.split(':');
+        startTime = { hour: parseInt(startTimeValue[0]), minute: parseInt(startTimeValue[1]) };
+        
+        const endTimeValue = document.getElementById('end-time').value.split(':');
+        endTime = { hour: parseInt(endTimeValue[0]), minute: parseInt(endTimeValue[1]) };
+    }
+    
+    // Salva le impostazioni nel localStorage
+    saveTimerSettings();
+    
+    // Rimuovi override forzato
+    forceVotingStatus = null;
+    
+    // Aggiorna immediatamente il timer
+    updateVotingTimer();
+    
+    console.log('=== IMPOSTAZIONI TIMER APPLICATE ===');
+    console.log('Timer personalizzato abilitato:', customTimerEnabled);
+    if (customTimerEnabled) {
+        console.log('Inizio:', `${['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'][startDay]} ${startTime.hour}:${startTime.minute.toString().padStart(2, '0')}`);
+        console.log('Fine:', `${['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'][endDay]} ${endTime.hour}:${endTime.minute.toString().padStart(2, '0')}`);
+    }
+    
+    alert('✅ Impostazioni periodo votazioni salvate con successo!');
+    hideTimerSettings();
+}
+
+// Reset delle impostazioni del timer
+function resetTimerSettings() {
+    customTimerEnabled = false;
+    startDay = 4; // Giovedì
+    startTime = { hour: 0, minute: 0 }; // 00:00
+    endDay = 5; // Venerdì
+    endTime = { hour: 20, minute: 0 }; // 20:00
+    forceVotingStatus = null;
+    
+    // Salva le impostazioni resetate nel localStorage
+    saveTimerSettings();
+    
+    // Aggiorna i controlli
+    loadCurrentTimerSettings();
+    
+    // Aggiorna il timer
+    updateVotingTimer();
+    
+    alert('🔄 Impostazioni timer ripristinate ai valori predefiniti!');
+}
+
+// Forza l'apertura delle votazioni
+function forceVotingOpen() {
+    forceVotingStatus = 'open';
+    updateVotingTimer();
+    updateCurrentStatusDisplay();
+    console.log('🟢 FORZATO: Votazioni APERTE');
+    alert('🟢 Votazioni forzate in modalità APERTA!');
+}
+
+// Forza la chiusura delle votazioni
+function forceVotingClosed() {
+    forceVotingStatus = 'closed';
+    updateVotingTimer();
+    updateCurrentStatusDisplay();
+    console.log('🔴 FORZATO: Votazioni CHIUSE');
+    alert('🔴 Votazioni forzate in modalità CHIUSA!');
+}
+
+// Event listeners per chiusura modal con Escape
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const timerModal = document.getElementById('timer-settings-modal');
+        if (timerModal && !timerModal.classList.contains('hidden')) {
+            hideTimerSettings();
+        }
+    }
+});
+</script>
+
+<!-- CSS aggiuntivo per animazioni -->
+<style>
+.poll-option:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.vote-indicator {
+    transition: all 0.2s ease-in-out;
+}
+
+.poll-option.voted {
+    background-color: #dbeafe !important;
+    border-color: #93c5fd !important;
+}
+
+.info-btn {
+    transition: all 0.2s ease-in-out;
+}
+
+.info-btn:hover {
+    transform: scale(1.1);
+}
+
+/* Scrollbar personalizzata elegante */
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+    transition: background 0.2s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:active {
+    background: #64748b;
+}
+
+/* Gradiente fade per indicare scroll */
+.scroll-fade::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 10px;
+    background: linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0));
+    pointer-events: none;
+    z-index: 10;
+}
+
+.scroll-fade::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 10px;
+    background: linear-gradient(to top, rgba(255,255,255,1), rgba(255,255,255,0));
+    pointer-events: none;
+    z-index: 10;
+}
+
+/* Animazioni per il modal */
+#voters-modal {
+    backdrop-filter: blur(4px);
+}
+
+#voters-modal .bg-white {
+    transform: scale(0.9);
+    transition: transform 0.2s ease-in-out;
+}
+
+#voters-modal .bg-white.scale-100 {
+    transform: scale(1);
+}
+
+/* Animazione per i votanti */
+#voters-content > div {
+    animation: slideIn 0.3s ease-out forwards;
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+#voters-content > div:nth-child(1) { animation-delay: 0.1s; }
+#voters-content > div:nth-child(2) { animation-delay: 0.2s; }
+#voters-content > div:nth-child(3) { animation-delay: 0.3s; }
+#voters-content > div:nth-child(4) { animation-delay: 0.4s; }
+#voters-content > div:nth-child(5) { animation-delay: 0.5s; }
+
+@keyframes slideIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Smooth scroll behavior */
+.custom-scrollbar {
+    scroll-behavior: smooth;
+}
+
+.scrollable-indicator.has-scroll::after {
+    content: '⇅';
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    font-size: 12px;
+    opacity: 0.6;
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(-50%);
+    }
+    40% {
+        transform: translateY(-60%);
+    }
+    60% {
+        transform: translateY(-40%);
+    }
+}
+</style>

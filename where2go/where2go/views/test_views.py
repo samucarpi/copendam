@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from django.contrib import messages
 from django.db import IntegrityError
-from ..models import Categories, Restaurants, Reviews, FoodPoll
+from ..models import Categories, Restaurants, Reviews, FoodPoll, PresencePoll
 
 
 def admin_dashboard(request):
@@ -12,17 +12,25 @@ def admin_dashboard(request):
     categories = Categories.objects.all().order_by('name')
     restaurants = Restaurants.objects.all().order_by('name')
     users = User.objects.all()
-    reviews = Reviews.objects.all()[:10]
+    reviews = Reviews.objects.all().order_by('-created_at')[:10]
+    food_polls = FoodPoll.objects.all().select_related('user', 'category').order_by('-id')
+    presence_polls = PresencePoll.objects.all().select_related('user')
     
     context = {
         'categories': categories,
         'restaurants': restaurants,
         'users': users,
         'reviews': reviews,
+        'food_polls': food_polls,
+        'presence_polls': presence_polls,
         'total_categories': categories.count(),
         'total_restaurants': restaurants.count(),
         'total_users': users.count(),
         'total_reviews': Reviews.objects.count(),
+        'total_food_polls': food_polls.count(),
+        'total_presence_polls': presence_polls.count(),
+        'present_votes': presence_polls.filter(presence='present').count(),
+        'absent_votes': presence_polls.filter(presence='absent').count(),
     }
     return render(request, 'test/test.html', context)
 
@@ -183,5 +191,5 @@ def get_statistics(request):
 
 
 def test_view(request):
-    """Legacy test view - redirects to admin dashboard"""
-    return redirect('admin_dashboard')
+    """Comprehensive database test view - shows all models and data"""
+    return admin_dashboard(request)
